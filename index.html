@@ -98,6 +98,7 @@
     .layout {
       max-width: 1360px; margin: 0 auto; display: grid; grid-template-columns: 260px 1fr; min-height: calc(100vh - 56px);
     }
+    .layout > * { min-width: 0; }
     .sidebar {
       border-right: 1px solid var(--border); padding: 24px 16px; position: sticky; top: 56px;
       height: calc(100vh - 56px); overflow-y: auto; display: flex; flex-direction: column; justify-content: space-between;
@@ -272,12 +273,60 @@
     .nav-btn > span:first-child { display: inline-flex; align-items: center; gap: 6px; min-width: 0; }
     .nav-badge { font-family: 'JetBrains Mono', monospace; font-size: 9px; color: var(--text-muted); border: 1px solid var(--border); border-radius: 3px; padding: 0 4px; white-space: nowrap; flex: none; }
 
+    /* Mobile navigation */
+    .menu-toggle { display: none; font-size: 15px; padding: 6px 10px; }
+    .backdrop { display: none; }
+
+    /* ---- Tablet ---- */
     @media (max-width: 920px) {
       .layout { grid-template-columns: 1fr; }
-      .sidebar { position: static; height: auto; border-right: none; border-bottom: 1px solid var(--border); }
-      .content { padding: 24px 18px 56px; }
-      .grid-2, .grid-3, .el-gallery, .dict-grid { grid-template-columns: 1fr; }
-      .search-input { width: 140px; }
+      .sidebar {
+        position: fixed; top: 0; left: 0; z-index: 70;
+        width: min(300px, 84vw); height: 100vh; height: 100dvh;
+        background: var(--bg-elevated);
+        border-right: 1px solid var(--border);
+        transform: translateX(-105%);
+        transition: transform 0.22s ease;
+        padding: 20px 14px;
+        justify-content: flex-start;
+      }
+      .sidebar.open { transform: none; box-shadow: 0 0 44px rgba(0, 0, 0, 0.3); }
+      .backdrop.visible { display: block; position: fixed; inset: 0; z-index: 60; background: rgba(0, 0, 0, 0.42); }
+      body.nav-open { overflow: hidden; }
+      .menu-toggle { display: inline-flex; }
+      .topbar { padding: 0 12px; gap: 8px; }
+      .topbar-controls { flex: 1; min-width: 0; }
+      .search-input-wrap { flex: 1; min-width: 0; }
+      .search-input { width: 100%; }
+      .kbd-hint { display: none; }
+      .content { padding: 20px 16px 56px; }
+      .grid-2, .grid-3, .dict-grid { grid-template-columns: 1fr; }
+      .el-gallery { grid-template-columns: 1fr 1fr; gap: 10px; }
+      .el-preview { height: 96px; }
+      .lecture-title { font-size: 21px; }
+      .block-title { font-size: 15px; }
+      .data-table { font-size: 12.5px; }
+      .data-table th, .data-table td { padding: 8px 9px; }
+      .mindmap li { font-size: 12.5px; }
+      .fold-box .fold-body { padding: 10px 12px 12px; }
+      .flashcard-box { padding: 18px; min-height: 200px; }
+      .fc-question { font-size: 15.5px; }
+      .lec-pager .btn-icon { flex: 1; justify-content: center; }
+      #termPopup { max-width: calc(100vw - 20px); font-size: 12.5px; }
+      .btn-icon, .pill, .quiz-opt, .nav-btn, .mm-leaf, .term { touch-action: manipulation; }
+    }
+
+    /* ---- Phone ---- */
+    @media (max-width: 600px) {
+      .brand span:last-child { display: none; }
+      #themeLabel { display: none; }
+      .lecture-kicker { flex-wrap: wrap; }
+      .lecture-kicker a { display: none; }
+      .content { padding: 16px 12px 48px; }
+      .el-gallery { grid-template-columns: 1fr; }
+      .quiz-meta-bar { align-items: stretch; flex-direction: column; }
+      .quiz-meta-bar > div:last-child { justify-content: space-between; }
+      .tldr-list li { font-size: 13px; }
     }
   </style>
 </head>
@@ -285,6 +334,7 @@
 
   <!-- Top Header -->
   <header class="topbar">
+    <button class="btn-icon menu-toggle" id="menuToggle" aria-label="Открыть меню разделов">☰</button>
     <div class="brand">
       <span class="brand-badge">ITMO // UML</span>
       <span>Справочник и тренажер: Лекции 1–8</span>
@@ -300,6 +350,8 @@
       </button>
     </div>
   </header>
+
+  <div class="backdrop" id="backdrop"></div>
 
   <div class="layout">
     <!-- Sidebar Navigation -->
@@ -3082,6 +3134,26 @@
       const blk = document.getElementById(leaf.getAttribute('data-blk'));
       if (blk) blk.scrollIntoView({ behavior: 'smooth', block: 'start' });
     });
+
+    // Mobile drawer navigation
+    const menuToggle = document.getElementById('menuToggle');
+    const sidebar = document.querySelector('.sidebar');
+    const backdrop = document.getElementById('backdrop');
+
+    function closeSidebar() {
+      sidebar.classList.remove('open');
+      backdrop.classList.remove('visible');
+      document.body.classList.remove('nav-open');
+    }
+    menuToggle.addEventListener('click', () => {
+      const isOpen = sidebar.classList.toggle('open');
+      backdrop.classList.toggle('visible', isOpen);
+      document.body.classList.toggle('nav-open', isOpen);
+    });
+    backdrop.addEventListener('click', closeSidebar);
+    navBtns.forEach(btn => btn.addEventListener('click', closeSidebar));
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') closeSidebar(); });
+    window.addEventListener('resize', () => { if (window.innerWidth > 920) closeSidebar(); });
 
     const readToggles = document.querySelectorAll('.read-toggle');
     const progressText = document.getElementById('progressText');
